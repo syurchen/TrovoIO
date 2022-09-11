@@ -4,6 +4,7 @@ import aiohttp
 import logging
 import asyncio
 import time
+from .models import WsMessage, AuthMessage, MessageType
 
 logger = logging.getLogger("trovoio.http")
 
@@ -37,13 +38,7 @@ class WebSocket:
             await self._websocket.close()  # If for some reason we are in a weird state, close it before retrying.
         try:
             self._websocket = await self._session.ws_connect(url=self.WS_URL, heartbeat=self.heartbeat)
-            await self._send({
-                "type": "AUTH",
-                "nonce": "",
-                "data": {
-                    "token": self._chat_token
-                }
-            })
+            await self._send(AuthMessage.create_from_token(self._chat_token))
         except Exception as e:
             retry = self._reconnect_delay
             logger.error(f"Websocket connection failure: {e}:: Attempting reconnect in {retry} seconds.")
@@ -72,18 +67,15 @@ class WebSocket:
             data = json.loads(msg.data)
             if data:
                 logger.debug(f" < {data}")
-                if 'PONG' == data['type']:
+                if MessageType.pong == data['type']:
                     self._ping_interval = data['data']['gap']
         asyncio.create_task(self._connect_and_auth())
 
     async def _ping(self):
         await self._send(
-            {
-                "type": "PING",
-                "nonce": ""
-            }
+            WsMessage(MessageType.ping)
         )
         self._last_ping = time.time()
 
-    async def _send(self, message: dict):
-        await self._websocket.send_str(json.dumps(message) + "\r\n")
+    async def _send(self, message: WsMessage):
+        await self._websocket.send_str(json.dumps(vars(message)) + "\r\n")

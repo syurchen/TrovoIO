@@ -1,6 +1,6 @@
 import asyncio
-from trovoio.http import TrovoHTTP
-from trovoio.websocket import WebSocket
+from trovoio import TrovoHTTP
+from trovoio import WebSocket
 from settings import client_id
 
 
