@@ -4,7 +4,7 @@ import aiohttp
 import logging
 import asyncio
 import time
-from .models import WsMessage, AuthMessage, MessageType
+from .models import WsMessage, AuthMessage, MessageType, ChatMessage
 
 logger = logging.getLogger("trovoio.http")
 
@@ -22,6 +22,7 @@ class WebSocket:
         self._reconnect_requested = False
         self._chat_token = None
         self._session = aiohttp.ClientSession()
+        self._is_first_chat = True
 
     @property
     def is_alive(self) -> bool:
@@ -69,6 +70,14 @@ class WebSocket:
                 logger.debug(f" < {data}")
                 if MessageType.pong == data['type']:
                     self._ping_interval = data['data']['gap']
+                if MessageType.chat == data['type']:
+                    if self._is_first_chat:
+                        self._is_first_chat = False
+                        continue
+                    else:
+                        for chat_msg in ChatMessage.create_all_from_data(data['data']):
+                            print(chat_msg.content)
+
         asyncio.create_task(self._connect_and_auth())
 
     async def _ping(self):

@@ -45,3 +45,26 @@ class AuthMessage(WsMessage):
                 "token": token
             }
         )
+
+
+class ChatMessage(WsMessage):
+    chat_type = ChatMessageType.normal
+    message_id = ''
+    content = ''
+    nick_name = ''
+    user_name = ''
+    avatar = ''
+    sender_id = 0
+    send_time = ''
+
+    @staticmethod
+    def create_all_from_data(data: dict) -> list:
+        result = []
+        for chat in data['chats']:
+            chat_msg = ChatMessage(
+                MessageType.chat
+            )
+            chat_msg.__dict__ = chat
+            result.append(chat_msg)
+
+        return result
